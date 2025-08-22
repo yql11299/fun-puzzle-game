@@ -1,0 +1,19 @@
+# 忽略编译后的Python文件
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 忽略其他可能的临时文件
+*.log
+*.tmp
+*.bak
+
+# 忽略IDE相关文件
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
