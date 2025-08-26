@@ -1,19 +1,58 @@
 # 忽略编译后的Python文件
+# 忽略操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 忽略Python生成的文件
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*$py.class
 
-# 忽略其他可能的临时文件
-*.log
-*.tmp
-*.bak
+# 忽略虚拟环境
+venv/
+.env/
 
-# 忽略IDE相关文件
+# 忽略测试和覆盖率报告
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# 忽略构建文件
+build/
+dist/
+*.egg-info/
+*.spec
+
+# 忽略IDE和编辑器文件
 .idea/
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.swp
+*.swo
+*~
+
+# 忽略日志文件
+*.log
+
+# 忽略其他可能的临时文件
+*.tmp
+*.temp
+*.bak
+.tmp/
+.temp/
+
+# 忽略数据文件
+*.csv
+*.json
+*.sqlite3

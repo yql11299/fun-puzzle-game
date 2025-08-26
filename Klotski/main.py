@@ -3,38 +3,36 @@ import sys
 from game import Game
 from solver import Solver
 from levels import LevelManager
+from constants import *
 
 class KlotskiApp:
     def __init__(self):
         pygame.init()
-        self.width = 800
-        self.height = 600
+        self.width = SCREEN_WIDTH
+        self.height = SCREEN_HEIGHT
         self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("华容道游戏")
+        pygame.display.set_caption(GAME_TITLE)
         self.clock = pygame.time.Clock()
-        # 使用支持中文的字体
-        try:
-            # 尝试加载系统中文字体
-            self.font = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "WenQuanYi Micro Hei"], 36)
-        except:
-            # 如果加载失败，使用默认字体
-            self.font = pygame.font.Font(None, 36)
+        # 字体设置
+        self.font = get_font()
         self.level_manager = LevelManager()
         self.game = None
         self.solver = None
         self.game_mode = None
         self.state = "menu"
-        self.menu_options = ["出题模式", "解题模式", "退出游戏"]
+        self.menu_options = MENU_OPTIONS
         self.selected_option = 0
-        self.board_size = (5, 5)  # 默认棋盘大小
+        self.board_size = DEFAULT_BOARD_SIZE  # 默认棋盘大小
         self.selected_number = 1  # 默认选中的数字
         self.selected_level = 0  # 默认选中的关卡
-        self.margin = 50  # 棋盘边距
+        self.margin = MARGIN  # 棋盘边距
         # 棋盘大小输入状态
         self.input_rows = ""
         self.input_cols = ""
         self.input_state = "rows"
         self.solution = None
+        # 初始化默认的Game对象，避免None值引用问题
+        self.game = Game(self.board_size, mode="create")
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -64,21 +62,24 @@ class KlotskiApp:
                         self.state = "menu"
                     elif event.key == pygame.K_RETURN:
                         try:
-                            rows = int(self.input_rows)
-                            cols = int(self.input_cols)
-                            if 2 <= rows < 10 and 2 <= cols < 10:
-                                self.board_size = (rows, cols)
-                                self.game = Game(self.board_size, mode="create")
-                                self.state = "create_level"
-                            else:
-                                # 显示错误：数字必须在2-9之间
-                                error_text = self.font.render("数字必须在2-9之间", True, (255, 0, 0))
-                                self.screen.blit(error_text, (self.width//2 - error_text.get_width()//2, 300))
-                                pygame.display.flip()
-                                pygame.time.delay(1000)
+                            if self.input_rows and self.input_cols:
+                                rows = int(self.input_rows)
+                                cols = int(self.input_cols)
+                                if 2 <= rows < 10 and 2 <= cols < 10:
+                                    self.board_size = (rows, cols)
+                                else:
+                                    # 显示错误：数字必须在2-9之间
+                                    error_text = self.font.render(TEXT_MESSAGES["INVALID_NUMBER"], True, RED)
+                                    self.screen.blit(error_text, (self.width//2 - error_text.get_width()//2, 300))
+                                    pygame.display.flip()
+                                    pygame.time.delay(1000)
+                                    return
+                            # 直接按回车，使用默认的5x5棋盘
+                            self.game = Game(self.board_size, mode="create")
+                            self.state = "create_level"
                         except ValueError:
                             # 显示错误：请输入有效数字
-                            error_text = self.font.render("请输入有效数字", True, (255, 0, 0))
+                            error_text = self.font.render(TEXT_MESSAGES["INPUT_NUMBER"], True, RED)
                             self.screen.blit(error_text, (self.width//2 - error_text.get_width()//2, 300))
                             pygame.display.flip()
                             pygame.time.delay(1000)
@@ -98,9 +99,8 @@ class KlotskiApp:
                 elif self.state == "create_level":
                     if event.key == pygame.K_ESCAPE:
                         self.state = "menu"
-                        self.game = None
                     elif event.key == pygame.K_s:
-                        if self.game.mode == "create":
+                        if self.game and self.game.mode == "create":
                             # 保存关卡
                             level_name = f"custom_level_{len(self.level_manager.levels) + 1}"
                             success = self.level_manager.save_level(
@@ -187,28 +187,10 @@ class KlotskiApp:
                 self.screen.blit(title, (sidebar_x + sidebar_width//2 - title.get_width()//2, sidebar_y + 10))
                 
                 # 绘制快捷键说明
-                help_texts = []
-                if self.game.mode == "create":
-                    help_texts = [
-                        "方向键: 移动选中的格子",
-                        "数字键1-9: 设置方块值",
-                        "0键: 清除方块值",
-                        "Q键: 设置起点",
-                        "E键: 设置终点",
-                        "ESC: 返回菜单",
-                        "S键: 保存关卡"
-                    ]
+                if self.game and self.game.mode == "create":
+                    help_texts = HELP_TEXTS["create"]
                 else:
-                    help_texts = [
-                        "方向键: 移动选中的格子",
-                        "WASD: 移动选中的方块",
-                        "数字键1-9: 选择方块",
-                        "0键: 取消选择",
-                        "Q键: 设置起点",
-                        "E键: 设置终点",
-                        "ESC: 返回菜单",
-                        "S键: 自动求解"
-                    ]
+                    help_texts = HELP_TEXTS["solve"]
                 
                 for i, text in enumerate(help_texts):
                     help_text = sidebar_font.render(text, True, (0, 0, 0))

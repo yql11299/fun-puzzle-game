@@ -1,6 +1,9 @@
 from game import Game
 from typing import List, Tuple, Dict, Set
 from collections import deque
+from game import Game
+from constants import DIRECTION_MAP
+from utils import get_block_positions
 
 class Solver:
     def __init__(self, game: Game):
@@ -45,11 +48,12 @@ class Solver:
         return temp_game.win  # 返回win属性的值
 
     def get_blocks(self, state):
-        # 获取所有非零方块
+        # 获取所有非零且非墙体方块
         blocks = set()
         for row in state:
             blocks.update(row)
         blocks.discard(0)
+        blocks.discard(99)  # 排除墙体
         return blocks
 
     def move_block(self, state, block, direction):
