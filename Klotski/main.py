@@ -99,35 +99,60 @@ class KlotskiApp:
                 elif self.state == "create_level":
                     if event.key == pygame.K_ESCAPE:
                         self.state = "menu"
-                    elif event.key == pygame.K_s:
-                        if self.game and self.game.mode == "create":
-                            # 保存关卡
-                            level_name = f"custom_level_{len(self.level_manager.levels) + 1}"
-                            success = self.level_manager.save_level(
-                                (self.game.rows, self.game.cols),
-                                self.game.board,
-                                self.game.targets,
-                                level_name
-                            )
-                            if success:
-                                print(f"关卡已保存: {level_name}")
-                                # 锁定棋盘，切换到解题模式
-                                self.game.board_locked = True
-                                self.game.mode = "solve"
-                        else:
-                            # 自动求解
-                            solver = Solver(self.game)
-                            solution = solver.solve()
-                            if solution:
+                    elif event.key == pygame.K_s and self.game and self.game.mode == "create":
+                        # 保存关卡
+                        level_name = f"custom_level_{len(self.level_manager.levels) + 1}"
+                        success = self.level_manager.save_level(
+                            (self.game.rows, self.game.cols),
+                            self.game.board,
+                            self.game.targets,
+                            level_name
+                        )
+                        if success:
+                            print(f"关卡已保存: {level_name}")
+                            # 锁定棋盘，切换到解题模式
+                            self.game.board_locked = True
+                            self.game.mode = "solve"
+                            # 启动用户求解计时器
+                            self.game.start_user_solve_timer()
+                    elif event.key == pygame.K_SPACE and self.game and (self.game.mode == "solve" or (self.game.mode == "create" and self.game.level_complete)):
+                        # 自动求解
+                        solver = Solver(self.game)
+                        solution = solver.solve()
+                        if solution is not None:
+                            if len(solution) == 0:
+                                self.solution = "初始状态已经是目标状态，无需移动"
+                                print("初始状态已经是目标状态，无需移动")
+                            else:
                                 formatted_solution = solver.format_solution(solution)
                                 self.solution = formatted_solution
                                 print(f"求解结果: {formatted_solution}")
-                            else:
-                                self.solution = "无解"
-                                print("无解")
+                        else:
+                            self.solution = "无解"
+                            print("无解")
                     else:
                         # 传递键盘事件给游戏处理
                         self.game.handle_keyboard(event)
+                elif self.state == "select_level":
+                    if event.key == pygame.K_ESCAPE:
+                        self.state = "menu"
+                    elif event.key == pygame.K_UP:
+                        self.selected_level = (self.selected_level - 1) % len(self.level_manager.levels)
+                    elif event.key == pygame.K_DOWN:
+                        self.selected_level = (self.selected_level + 1) % len(self.level_manager.levels)
+                    elif event.key == pygame.K_RETURN:
+                        # 选择关卡并进入解题模式
+                        if self.level_manager.levels:
+                            level_data = self.level_manager.levels[self.selected_level]
+                            board_size = level_data["board_size"]
+                            board = level_data["board"]
+                            targets = level_data["targets"]
+                            # 创建新的游戏实例并设置为解题模式
+                            self.game = Game(board_size, mode="solve", board=board, targets=targets)
+                            self.game.board_locked = True
+                            # 启动用户求解计时器
+                            self.game.start_user_solve_timer()
+                            self.state = "create_level"  # 复用create_level状态进行显示
                 # 其他状态的事件处理...
 
     def draw(self):
@@ -206,6 +231,27 @@ class KlotskiApp:
                     for i, line in enumerate(solution_lines):
                         solution_text = sidebar_font.render(line, True, (0, 0, 0))
                         self.screen.blit(solution_text, (sidebar_x + 10, sidebar_y + 50 + len(help_texts) * 25 + 40 + i * 25))
+        elif self.state == "select_level":
+            # 绘制关卡选择界面
+            title = self.font.render("选择关卡", True, (0, 0, 0))
+            self.screen.blit(title, (self.width//2 - title.get_width()//2, 100))
+            
+            # 绘制关卡列表
+            if self.level_manager.levels:
+                for i, level in enumerate(self.level_manager.levels):
+                    color = (255, 0, 0) if i == self.selected_level else (0, 0, 0)
+                    level_name = level["name"]
+                    level_size = level["board_size"]
+                    level_text = self.font.render(f"{level_name} ({level_size[0]}x{level_size[1]})", True, color)
+                    self.screen.blit(level_text, (self.width//2 - level_text.get_width()//2, 200 + i * 50))
+                    
+                hint = self.font.render("上下方向键选择，Enter确认，Esc返回", True, (100, 100, 100))
+                self.screen.blit(hint, (self.width//2 - hint.get_width()//2, self.height - 100))
+            else:
+                empty_text = self.font.render("题库为空，请先创建关卡", True, (100, 100, 100))
+                self.screen.blit(empty_text, (self.width//2 - empty_text.get_width()//2, 300))
+                back_hint = self.font.render("按Esc返回菜单", True, (100, 100, 100))
+                self.screen.blit(back_hint, (self.width//2 - back_hint.get_width()//2, self.height - 100))
         # 其他状态的绘制...
 
     def run(self):
